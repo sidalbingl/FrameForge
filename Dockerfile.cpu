@@ -1,0 +1,43 @@
+# FrameForge - Dockerfile for Local Development (CPU-only)
+# Lightweight Dockerfile for local testing on Windows/Mac without GPU
+FROM python:3.10-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY app/requirements.txt /app/requirements.txt
+
+# Install Python dependencies
+# Install CPU-only PyTorch first (smaller, faster for local dev)
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir torch==2.3.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY app/ /app/app/
+
+# Create directory for temporary files
+RUN mkdir -p /app/temp
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8080
+ENV MODEL_NAME=Salesforce/blip2-opt-2.7b
+
+# Expose port
+EXPOSE 8080
+
+# Run the application
+# Cloud Run sets PORT env var automatically, uvicorn reads it
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+

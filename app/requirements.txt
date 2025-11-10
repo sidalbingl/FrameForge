@@ -1,0 +1,32 @@
+# FrameForge - Python Dependencies
+# 3-Layer Architecture: Extraction + Understanding + Visualization
+
+# Core framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+pydantic==2.5.0
+
+# Computer vision and video processing (Extraction Layer)
+opencv-python==4.8.1.78
+scenedetect[opencv]==0.6.3
+
+# Audio transcription (Extraction Layer)
+openai-whisper==20231117
+ffmpeg-python==0.2.0
+
+# AI/ML - Vision-Language Models (Extraction Layer)
+torch==2.1.0
+torchvision==0.16.0
+transformers==4.35.0
+Pillow==10.1.0
+
+# AI Understanding (Understanding Layer)
+anthropic==0.39.0  # Claude API for story analysis
+
+# Google Cloud Storage
+google-cloud-storage==2.10.0
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0

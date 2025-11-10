@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FrameForge - AI Video Storyboard Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 🔮 Gradient Animated Background */
+    body {
+      background: radial-gradient(circle at 20% 20%, #1e3a8a, #111827 80%);
+      background-size: 200% 200%;
+      animation: gradientShift 10s ease infinite;
+      color: #f9fafb;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* 🎬 Animated Hero Icon */
+    .film-reel {
+      width: 100px;
+      height: 100px;
+      border: 6px solid #60a5fa;
+      border-radius: 50%;
+      position: relative;
+      animation: spin 4s linear infinite;
+    }
+    .film-reel::before, .film-reel::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      background: #60a5fa;
+    }
+    .film-reel::before {
+      width: 12px;
+      height: 12px;
+      top: 20%;
+      left: 20%;
+    }
+    .film-reel::after {
+      width: 12px;
+      height: 12px;
+      bottom: 20%;
+      right: 20%;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* 🎞️ Storyboard Grid */
+    .storyboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* ✨ Card Animations */
+    .frame-card {
+      transition: all 0.3s ease;
+      background-color: #1f2937;
+      border: 1px solid #374151;
+    }
+    .frame-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(96,165,250,0.2);
+    }
+
+    /* 🔄 Film Strip Loading */
+    .film-strip {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 5px;
+      margin-top: 1rem;
+    }
+    .film-frame {
+      width: 10px;
+      height: 26px;
+      background: #60a5fa;
+      border-radius: 2px;
+      animation: bounce 1s infinite ease-in-out;
+    }
+    .film-frame:nth-child(2){ animation-delay: 0.1s;}
+    .film-frame:nth-child(3){ animation-delay: 0.2s;}
+    .film-frame:nth-child(4){ animation-delay: 0.3s;}
+    .film-frame:nth-child(5){ animation-delay: 0.4s;}
+    @keyframes bounce {
+      0%, 100% { transform: scaleY(1); opacity: 0.6; }
+      50% { transform: scaleY(1.8); opacity: 1; }
+    }
+  </style>
+</head>
+
+<body class="font-sans">
+  <!-- 🏠 Hero Section -->
+  <section class="text-center py-16">
+    <div class="flex flex-col items-center">
+      <div class="film-reel mb-6"></div>
+      <h1 class="text-5xl font-extrabold tracking-tight text-white mb-4">
+        FrameForge
+      </h1>
+      <p class="text-lg text-blue-200 max-w-2xl mx-auto">
+        Convert your videos into cinematic storyboards powered by AI.
+      </p>
+      <p class="text-sm text-blue-300 mt-2">
+        🎬 Automatic scene detection • AI-powered captions
+      </p>
+    </div>
+  </section>
+
+  <!-- 📤 Upload Section -->
+  <section class="max-w-xl mx-auto bg-gray-800/60 p-8 rounded-2xl shadow-lg mb-12">
+    <h2 class="text-2xl font-semibold mb-4 text-blue-400">Upload Video</h2>
+    <form id="uploadForm" class="space-y-6">
+      <div>
+        <input
+          type="file"
+          id="videoFile"
+          accept="video/*"
+          required
+          class="block w-full text-sm text-gray-300 file:mr-4 file:py-3 file:px-5 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+        >
+        <p class="mt-2 text-xs text-gray-400">
+          Max 150MB • Recommended: 30s - 3 minutes
+        </p>
+      </div>
+
+      <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+        <div class="flex items-center gap-2 mb-2">
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          <span class="text-sm font-semibold text-blue-300">Scene Detection Active</span>
+        </div>
+        <p class="text-xs text-gray-400">
+          AI automatically detects scene changes and extracts key frames
+        </p>
+      </div>
+
+      <button
+        type="submit"
+        id="uploadBtn"
+        class="w-full py-3 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 transition focus:ring-2 focus:ring-blue-400 disabled:bg-gray-500"
+      >
+        🎞️ Generate Storyboard
+      </button>
+    </form>
+  </section>
+
+  <!-- 🔄 Loading Animation -->
+  <div id="loading" class="hidden text-center py-12">
+    <div class="film-strip">
+      <div class="film-frame"></div>
+      <div class="film-frame"></div>
+      <div class="film-frame"></div>
+      <div class="film-frame"></div>
+      <div class="film-frame"></div>
+    </div>
+    <p class="mt-4 text-blue-200 text-lg">Detecting scenes and analyzing frames…</p>
+    <p class="mt-2 text-sm text-gray-400">This may take 1-2 minutes</p>
+  </div>
+
+  <!-- ⚠️ Error -->
+  <div id="error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md max-w-xl mx-auto mb-8">
+    <p id="errorMessage"></p>
+  </div>
+
+  <!-- 🎬 Results -->
+  <div id="results" class="hidden max-w-5xl mx-auto mb-16">
+    <div class="mb-6 text-center">
+      <h2 class="text-3xl font-semibold text-blue-400 mb-2">Storyboard</h2>
+      <p class="text-gray-300">
+        <span id="totalFrames"></span> scenes detected • 
+        <span id="extractionMethod" class="text-blue-300"></span>
+      </p>
+    </div>
+    <div id="storyboard" class="storyboard-grid"></div>
+  </div>
+
+  <!-- 🚀 JS Logic -->
+  <script>
+    const API_BASE = window.location.origin;
+    const uploadForm = document.getElementById("uploadForm");
+    const videoFileInput = document.getElementById("videoFile");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const loading = document.getElementById("loading");
+    const error = document.getElementById("error");
+    const errorMessage = document.getElementById("errorMessage");
+    const results = document.getElementById("results");
+    const storyboard = document.getElementById("storyboard");
+    const totalFrames = document.getElementById("totalFrames");
+    const extractionMethod = document.getElementById("extractionMethod");
+
+    uploadForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const file = videoFileInput.files[0];
+      if (!file) return showError("Please select a video file.");
+
+      hideError(); 
+      hideResults(); 
+      showLoading();
+      uploadBtn.disabled = true;
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("use_scene_detection", "true"); // ✅ Scene detection enabled
+        formData.append("scene_threshold", "27.0"); // Default sensitivity
+
+        const response = await fetch(`${API_BASE}/upload`, { 
+          method: "POST", 
+          body: formData 
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || `Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        displayStoryboard(data);
+      } catch (err) {
+        showError(err.message || "Failed to process video.");
+      } finally {
+        hideLoading();
+        uploadBtn.disabled = false;
+      }
+    });
+
+    function showLoading() { loading.classList.remove("hidden"); }
+    function hideLoading() { loading.classList.add("hidden"); }
+    function showError(msg) { errorMessage.textContent = msg; error.classList.remove("hidden"); }
+    function hideError() { error.classList.add("hidden"); }
+    function hideResults() { results.classList.add("hidden"); }
+
+    function displayStoryboard(data) {
+      totalFrames.textContent = data.total_frames || 0;
+      
+      // Show extraction method
+      const method = data.extraction_method === "scene_detection" 
+        ? "🎬 Scene Detection" 
+        : "⏱️ Fixed Interval";
+      extractionMethod.textContent = method;
+      
+      storyboard.innerHTML = "";
+      
+      const scenes = data.frames || [];
+      if (scenes.length === 0) {
+        showError("No frames were generated. Please try again.");
+        return;
+      }
+      
+      scenes.forEach((f) => {
+        const card = document.createElement("div");
+        card.className = "frame-card rounded-xl overflow-hidden";
+        card.innerHTML = `
+          <div class="relative">
+            <img src="${f.frame_url}" class="w-full h-48 object-cover" alt="Frame ${f.frame_number}" loading="lazy">
+            <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+              ${f.timestamp.toFixed(1)}s
+            </div>
+            ${f.scene_number ? `
+              <div class="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                Scene ${f.scene_number}
+              </div>
+            ` : ''}
+          </div>
+          <div class="p-4">
+            <h3 class="font-semibold text-gray-100 mb-1">Frame #${f.frame_number}</h3>
+            <p class="text-sm text-gray-400">${f.caption}</p>
+          </div>`;
+        storyboard.appendChild(card);
+      });
+      
+      results.classList.remove("hidden");
+      results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+</body>
+</html>
