@@ -116,61 +116,158 @@ def extract_frames_scene_detection(
     threshold: float
 ) -> List[Dict]:
     """
-    Extract frames using scene detection.
-    Falls back to fixed interval if scene detection fails.
+    Extract frames using PySceneDetect for accurate scene change detection.
+    More reliable than FFmpeg select filter.
     """
-    print(f"Attempting scene detection (threshold={threshold})...")
-    
-    # Try scene detection with select filter
-    # Use a temporary directory to avoid filename issues
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
-        temp_pattern = str(temp_path / "scene%04d.jpg")
-        
-        normalized_threshold = threshold / 100.0
-        
-        cmd = [
+    print(f"[SCENE] Using intelligent scene detection (threshold={threshold})...")
+
+    try:
+        # Import scenedetect
+        try:
+            from scenedetect import VideoManager, SceneManager
+            from scenedetect.detectors import ContentDetector
+        except ImportError:
+            print("[SCENE] PySceneDetect not available, using FFmpeg method...")
+            return extract_frames_scene_detection_ffmpeg(video_path, output_dir, threshold)
+
+        # Create video manager and scene manager
+        video_manager = VideoManager([str(video_path)])
+        scene_manager = SceneManager()
+
+        # Add content detector with threshold
+        # ContentDetector threshold: higher = fewer scenes (27 is good default)
+        scene_manager.add_detector(ContentDetector(threshold=threshold))
+
+        # Start video manager
+        video_manager.set_downscale_factor()
+        video_manager.start()
+
+        # Detect scenes
+        scene_manager.detect_scenes(frame_source=video_manager)
+        scene_list = scene_manager.get_scene_list()
+
+        video_manager.release()
+
+        if len(scene_list) < 1:
+            print("[SCENE] No scenes detected, using fixed interval fallback")
+            return extract_frames_fixed_interval(video_path, output_dir, 3.0)
+
+        print(f"[SCENE] Detected {len(scene_list)} scene changes")
+
+        # Extract frame at the start of each scene
+        frames = []
+        for idx, scene in enumerate(scene_list):
+            frame_num = idx + 1
+            # Get scene start time in seconds
+            start_time = scene[0].get_seconds()
+
+            output_file = output_dir / f"scene_{frame_num:04d}.jpg"
+
+            # Extract frame using FFmpeg
+            cmd = [
+                "ffmpeg",
+                "-ss", f"{start_time:.3f}",
+                "-i", str(video_path),
+                "-vframes", "1",
+                "-q:v", "2",
+                str(output_file),
+                "-y",
+                "-loglevel", "error"
+            ]
+
+            subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=30)
+
+            if output_file.exists():
+                frames.append({
+                    "timestamp": start_time,
+                    "path": str(output_file),
+                    "scene_number": frame_num
+                })
+
+        print(f"[SCENE] ✅ Extracted {len(frames)} scene frames with accurate timestamps")
+        return frames
+
+    except Exception as e:
+        print(f"[SCENE] ⚠️ Scene detection error: {e}")
+        print("[SCENE] Falling back to fixed interval (3 seconds)")
+        import traceback
+        print(traceback.format_exc())
+        return extract_frames_fixed_interval(video_path, output_dir, 3.0)
+
+
+def extract_frames_scene_detection_ffmpeg(
+    video_path: Path,
+    output_dir: Path,
+    threshold: float
+) -> List[Dict]:
+    """
+    FFmpeg-based scene detection fallback.
+    Less accurate but doesn't require PySceneDetect.
+    """
+    print(f"[SCENE] Using FFmpeg scene detection...")
+
+    # Normalize threshold for FFmpeg (0.0-1.0 range)
+    # Lower threshold = more sensitive = more scenes
+    normalized_threshold = threshold / 100.0
+
+    try:
+        # First pass: detect scene timestamps using showinfo
+        cmd_detect = [
             "ffmpeg",
             "-i", str(video_path),
-            "-vf", f"select='gt(scene\\,{normalized_threshold})'",
-            "-vsync", "0",  # Use frame number as timestamp
-            "-q:v", "2",
-            temp_pattern,
-            "-y",
-            "-loglevel", "error"
+            "-vf", f"select='gt(scene\\,{normalized_threshold})',showinfo",
+            "-f", "null",
+            "-",
+            "-loglevel", "info"
         ]
-        
-        try:
-            subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=300)
-            
-            # Move files from temp to output directory
-            temp_files = sorted(temp_path.glob("scene*.jpg"))
-            
-            if len(temp_files) < 2:
-                raise RuntimeError("Too few scenes detected")
-            
-            frames = []
-            for idx, temp_file in enumerate(temp_files):
-                frame_num = idx + 1
-                output_file = output_dir / f"scene_{frame_num:04d}.jpg"
-                shutil.move(str(temp_file), str(output_file))
-                
-                # Estimate timestamp (we don't have exact timing from this method)
-                timestamp = idx * 2.0  # Rough estimate
-                
+
+        result = subprocess.run(cmd_detect, capture_output=True, text=True, timeout=300)
+
+        # Parse timestamps from output
+        import re
+        timestamps = []
+        for line in result.stderr.split('\n'):
+            if 'pts_time:' in line:
+                match = re.search(r'pts_time:([\d.]+)', line)
+                if match:
+                    timestamps.append(float(match.group(1)))
+
+        if len(timestamps) < 2:
+            print(f"[SCENE] Only {len(timestamps)} scenes detected, using fixed interval")
+            return extract_frames_fixed_interval(video_path, output_dir, 3.0)
+
+        # Extract frames at detected timestamps
+        frames = []
+        for idx, timestamp in enumerate(timestamps[:50]):  # Limit to 50 scenes max
+            frame_num = idx + 1
+            output_file = output_dir / f"scene_{frame_num:04d}.jpg"
+
+            cmd = [
+                "ffmpeg",
+                "-ss", f"{timestamp:.3f}",
+                "-i", str(video_path),
+                "-vframes", "1",
+                "-q:v", "2",
+                str(output_file),
+                "-y",
+                "-loglevel", "error"
+            ]
+
+            subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=30)
+
+            if output_file.exists():
                 frames.append({
                     "timestamp": timestamp,
                     "path": str(output_file),
                     "scene_number": frame_num
                 })
-            
-            print(f"✅ Extracted {len(frames)} scenes")
-            return frames
-            
-        except Exception as e:
-            print(f"⚠️ Scene detection failed: {e}")
-            print("Falling back to fixed interval mode")
-            return extract_frames_fixed_interval(video_path, output_dir, 2.0)
+
+        print(f"[SCENE] ✅ Extracted {len(frames)} scenes using FFmpeg method")
+        return frames
+
+    except Exception as e:
+        print(f"[SCENE] FFmpeg scene detection failed: {e}")
+        return extract_frames_fixed_interval(video_path, output_dir, 3.0)
 
 
 def get_video_duration(video_path: str) -> float:

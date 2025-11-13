@@ -25,14 +25,17 @@ Traditional AI pipelines for video understanding require dedicated servers or ex
 
 FrameForge automates the video-to-storyboard process through a **GPU-powered inference pipeline** on Cloud Run:
 
-1. User uploads a short video (≤ 10 s).
-2. The video is split into key frames using OpenCV/FFmpeg.
-3. Each frame is processed by a lightweight **Vision-Language Model (VLM)** (e.g., BLIP-2 or LLaVA-7B) running on Cloud Run GPU (NVIDIA L4).
-4. Captions are aggregated into a JSON storyboard structure.
-5. All assets are stored in **Google Cloud Storage (GCS)** and returned as signed URLs.
-6. (Optional) Gemini or Gemma text model refines captions for stylistic consistency.
+1. User uploads a video (≤ 150 MB).
+2. The video is split into key frames using **intelligent scene detection** or fixed-interval extraction.
+3. Each frame is processed by **BLIP base model** running on Cloud Run GPU (NVIDIA L4).
+4. (Optional) **Whisper** transcribes audio and aligns dialogue with frames.
+5. **Gemini 1.5 Flash** analyzes the frames and generates a professional screenplay with:
+   - Logline and synopsis
+   - INT/EXT scene formatting
+   - Visual style and themes
+6. All assets are stored in **Google Cloud Storage (GCS)** and returned as signed URLs.
 
-The result is a fast, low-cost, fully serverless video summarization system.
+The result is a fast, comprehensive, fully serverless video-to-screenplay system.
 
 ---
 
@@ -40,13 +43,14 @@ The result is a fast, low-cost, fully serverless video summarization system.
 
 | Feature | Description |
 |----------|-------------|
-| 🎞️ Video Frame Extraction | Uses FFmpeg/OpenCV to sample frames every 2 s |
-| 🧠 GPU-Accelerated Captioning | BLIP-2 / LLaVA inference on NVIDIA L4 GPU |
-| ☁️ Serverless Infrastructure | Deployed on Google Cloud Run (Service) |
-| 💾 Storage Integration | Input/output handled via Google Cloud Storage |
-| 🌐 Simple Web UI | Upload a video and visualize storyboard JSON |
-| 🔥 Warm-Up Endpoint | `/warmup` preloads model to avoid cold-start delay |
-| 📈 Scalable Design | Extendable to Cloud Run Jobs or Pub/Sub pipelines |
+| 🎞️ **Video Frame Extraction** | Intelligent scene detection or fixed-interval extraction using FFmpeg/OpenCV/SceneDetect |
+| 🧠 **GPU-Accelerated Captioning** | BLIP base model inference on NVIDIA L4 GPU |
+| 🎬 **Narrative Analysis** | Gemini 1.5 Flash generates professional screenplay format output |
+| 🎤 **Audio Transcription** | Whisper-powered dialogue extraction (optional) |
+| ☁️ **Serverless Infrastructure** | Deployed on Google Cloud Run (Service) with GPU support |
+| 💾 **Storage Integration** | Input/output handled via Google Cloud Storage |
+| 🌐 **Simple Web UI** | Upload a video and visualize storyboard with screenplay |
+| 📈 **Scalable Design** | Extendable to Cloud Run Jobs or Pub/Sub pipelines |
 
 ---
 
@@ -82,58 +86,75 @@ The result is a fast, low-cost, fully serverless video summarization system.
 
         Build Tools: Cloud Build + Artifact Registry
 
-        Optional Add-ons: Gemini API (text refinement), Cloud Tasks / Jobs for longer workloads 
+        Optional Add-ons: Gemini API, Cloud Tasks / Jobs for longer workloads
+
+---
+
 ## 7. Tech Stack
-Layer	Tools
-Frontend	HTML / JS / Tailwind (lightweight demo UI)
-Backend	FastAPI + Uvicorn
-AI / ML	PyTorch + Transformers (BLIP-2 or LLaVA)
-GPU Runtime	Cloud Run + NVIDIA L4
-Storage	Google Cloud Storage
-DevOps	Cloud Build + Artifact Registry
+
+| Layer | Tools |
+|-------|-------|
+| Frontend | HTML / JS / Tailwind CSS |
+| Backend | FastAPI + Uvicorn |
+| AI / ML | PyTorch + Transformers (BLIP), Whisper, Gemini 1.5 Flash |
+| GPU Runtime | Cloud Run + NVIDIA L4 |
+| Storage | Google Cloud Storage |
+| DevOps | Cloud Build + Artifact Registry |
+
+---
 
 ## 8. Development Plan (6 Days)
-Day	Milestone	Description
-Day 1	Environment Setup	Enable APIs, create bucket & repo, verify GPU quota
-Day 2	Local Prototype	Build FastAPI service, frame extraction & single-image caption
-Day 3	Containerization	Write Dockerfile, build via Cloud Build, deploy to Cloud Run GPU
-Day 4	Web UI	Minimal HTML/JS interface for upload & storyboard display
-Day 5	Optimization	Warm-up endpoint, memory tuning, error handling
-Day 6	Demo & Docs	Record 3 min video, finalize README & architecture diagram
+
+| Day | Milestone | Description |
+|-----|-----------|-------------|
+| Day 1 | Environment Setup | Enable APIs, create bucket & repo, verify GPU quota |
+| Day 2 | Local Prototype | Build FastAPI service, frame extraction & caption generation |
+| Day 3 | Containerization | Write Dockerfile, build via Cloud Build, deploy to Cloud Run GPU |
+| Day 4 | Web UI & Audio | HTML/JS interface + Whisper integration |
+| Day 5 | Narrative Analysis | Integrate Gemini for screenplay generation |
+| Day 6 | Demo & Docs | Testing, optimization, finalize documentation |
 
 
-##  9. Success Criteria
+## 9. Success Criteria
 
 ✅ Runs on Cloud Run GPU (NVIDIA L4)
-✅ Processes a 10 s video → storyboard (< 90 s total latency)
+✅ Processes videos → storyboard with screenplay (< 90 s for 10s video)
 ✅ Uses Google Cloud Storage for all I/O
-✅ Public demo URL available
+✅ Generates professional screenplay format output
+✅ Audio transcription with dialogue alignment
 ✅ Clean documentation + architecture diagram
 
-##  10. Future Enhancements
+## 10. Future Enhancements
 
-Scene-change detection & timeline labeling
+- Advanced scene classification (action, emotion, mood)
+- Multi-language subtitle generation
+- PDF/Word export for screenplay
+- Batch processing via Cloud Run Jobs
+- Real-time video streaming analysis
+- Custom model fine-tuning for specific genres
 
-Emotion / action classification per frame
-
-Gemini integration for narrative consistency
-
-PDF storyboard export
-
-Batch processing via Cloud Run Jobs
-
-##  11. Repository Structure
-frameforge/
+## 11. Repository Structure
+```
+FrameForge/
  ├─ app/
  │   ├─ main.py          # FastAPI entrypoint
  │   ├─ inference.py     # Model loading + caption generation
  │   ├─ video.py         # Frame extraction logic
  │   ├─ storage.py       # GCS upload/download helpers
- │   └─ requirements.txt
- ├─ Dockerfile
- ├─ web/                 # Simple frontend
+ │   ├─ audio.py         # Audio transcription with Whisper
+ │   ├─ narrative.py     # Gemini screenplay generation
+ │   ├─ requirements.txt
+ │   └─ static/
+ │       └─ index.html   # Web UI
+ ├─ Dockerfile           # GPU-enabled Docker image
+ ├─ Dockerfile.cpu       # CPU-only Docker image
+ ├─ .env                 # Environment variables
  ├─ README.md
- └─ PRD.md               # This file
+ ├─ architacture.md
+ ├─ prd.md               # This file
+ ├─ FRONTEND_BACKEND.md
+ └─ BUILD.md
+```
 
 ##  12. References
 

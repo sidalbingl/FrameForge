@@ -28,14 +28,21 @@ RUN ln -sf /usr/bin/python3 /usr/bin/python && \
 COPY app/requirements.txt /app/requirements.txt
 
 # Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
+# Install numpy first to prevent NumPy 2.x from being installed by other packages
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir "numpy<2.0,>=1.26.4" && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY app/ /app/app/
+# Copy application code (avoid cache files)
+COPY app/*.py /app/app/
+COPY app/static/ /app/app/static/
 
-# ✅ CRITICAL: Ensure static directory exists with index.html
-RUN ls -la /app/app/static/index.html || echo "⚠️ WARNING: index.html not found!"
+# Verify static files and check for screenplay button
+RUN ls -la /app/app/static/index.html && \
+    echo "Static files copied successfully" && \
+    grep -q "View Full Screenplay" /app/app/static/index.html && \
+    echo "✓ Screenplay button found in index.html" || \
+    echo "✗ WARNING: Screenplay button NOT found in index.html!"
 
 # Create directory for temporary files
 RUN mkdir -p /app/temp
@@ -50,4 +57,6 @@ ENV TRANSFORMERS_CACHE=/tmp/hf_cache
 EXPOSE 8080
 
 # Run the application
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+# Use timeout=0 to disable timeout for model loading
+# Cloud Run will handle the startup timeout separately
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --timeout-keep-alive 300"]

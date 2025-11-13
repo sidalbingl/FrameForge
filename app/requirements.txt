@@ -7,6 +7,10 @@ uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 pydantic==2.5.0
 
+# Core scientific stack
+numpy<2.0,>=1.26.4     # ✅ Pin to NumPy 1.x to avoid compatibility issues with OpenCV
+pandas==2.1.3
+
 # Computer vision and video processing (Extraction Layer)
 opencv-python==4.8.1.78
 scenedetect[opencv]==0.6.3
@@ -18,11 +22,15 @@ ffmpeg-python==0.2.0
 # AI/ML - Vision-Language Models (Extraction Layer)
 torch==2.1.0
 torchvision==0.16.0
-transformers==4.35.0
+transformers==4.35.2
 Pillow==10.1.0
+accelerate==0.25.0
+timm==0.9.12
+sentencepiece==0.1.99
 
 # AI Understanding (Understanding Layer)
-anthropic==0.39.0  # Claude API for story analysis
+anthropic==0.39.0
+google-generativeai==0.3.2
 
 # Google Cloud Storage
 google-cloud-storage==2.10.0
@@ -30,3 +38,6 @@ google-cloud-storage==2.10.0
 # Utilities
 python-dotenv==1.0.0
 requests==2.31.0
+
+# Performance optimization (GPU)
+ninja==1.11.1

@@ -1,0 +1,72 @@
+# Build cache buster (DO NOT IGNORE - needed for fresh builds)
+# .buildstamp
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Documentation (except README)
+*.md
+!README.md
+BUILD.md
+prd.md
+architacture.md
+FRONTEND_BACKEND.md
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+test_*.py
+*_test.py
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.log
+
+# Node modules (if any)
+node_modules/
+
+# Web frontend (if separate)
+web/
+
+# Model cache (download on Cloud Run instead)
+models/
+*.bin
+*.pt
+*.pth
+
+# Large files
+*.mp4
+*.avi
+*.mov
+*.mkv
+sample_*

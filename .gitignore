@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Environment variables (IMPORTANT!)
+.env
+*.env
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.log
+*.tmp
+temp/
+tmp/
+
+# Google Cloud
+service-account*.json
+*-credentials.json
+
+# Models (too large for Git)
+models/
+*.pth
+*.pt
+*.onnx
+*.safetensors
+
+# Video files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# Frame outputs
+frames/
+output/
+uploads/
